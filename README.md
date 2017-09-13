@@ -10,6 +10,8 @@ Environment
 ## Mobilenet
 Benchmark for [Mobilenet](https://github.com/PaddlePaddle/Mobile/tree/master/flowers102/mobilenet) inference.
 
+**Currently, on MI 5 phones, single-threaded inference takes 127.032ms.**
+
 | version | times(ms) | optimization(accelerate) |
 |---------|-----------|--------------|
 | d2258a4 | 321.682 | base |
