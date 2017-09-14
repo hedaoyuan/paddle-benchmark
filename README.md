@@ -8,7 +8,7 @@ Environment
   - Android clang version 3.8.256229  (based on LLVM 3.8.256229)
 
 ## Mobilenet
-Benchmark for [Mobilenet](https://github.com/PaddlePaddle/Mobile/tree/master/flowers102/mobilenet) inference.
+Benchmark for [Mobilenet](https://github.com/PaddlePaddle/Mobile/tree/master/flowers102/mobilenet) inference(input image 3x224x224).
 
 **Currently, on MI 5 phones, single-threaded inference takes 127.032ms.**
 
