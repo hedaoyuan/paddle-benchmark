@@ -25,3 +25,4 @@ Benchmark for [Mobilenet](https://github.com/PaddlePaddle/Mobile/tree/master/flo
 - The [**depthwise convolution**](https://github.com/PaddlePaddle/Paddle/pull/3718) is a depthwise convolution optimization base on arm neon intrinsics.
 - The **clang compile** is better than gcc compile.
 - The test method of **`mem(MB)`** is running the paddle inference program, and use the free command access the changes of memory usage in the system.
+- The previous value in **`size (KB)`** column is the size of the paddle inference.so, and the latter is the size after zip compressed.
