@@ -32,6 +32,8 @@ endif()
 project(inference CXX C)
 include(FindPaddle)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
 aux_source_directory(. SRC_LIST)
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
