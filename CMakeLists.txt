@@ -32,6 +32,7 @@ endif()
 project(inference CXX C)
 include(FindPaddle)
 
+option(WITH_STATIC        "Link static inference library"        ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
 aux_source_directory(. SRC_LIST)
@@ -40,11 +41,18 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)
 if(ANDROID_ABI)
+  if(WITH_STATIC)
     target_link_libraries(${PROJECT_NAME}
                           -Wl,--start-group -Wl,--whole-archive -lpaddle_capi_layers
                           -Wl,--no-whole-archive -lpaddle_capi_engine -Wl,--end-group
                           ${THIRD_PARTY_LIBRARYS}
                           log)
+  else()
+    target_link_libraries(${PROJECT_NAME}
+                          -lpaddle_capi_shared
+                          ${THIRD_PARTY_LIBRARYS}
+                          log)
+  endif()
 else()
     target_link_libraries(${PROJECT_NAME}
                     -Wl,--start-group -Wl,--whole-archive -lpaddle_capi_whole
