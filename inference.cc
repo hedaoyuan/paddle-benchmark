@@ -16,6 +16,7 @@ limitations under the License. */
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cmath>
 #include <paddle/capi.h>
 
 inline paddle_error& operator |=(paddle_error& a, paddle_error b) {
@@ -61,7 +62,8 @@ int main(int argc, char* argv[]) {
   std::string predict_config;
   std::string predict_model;
   std::string merged_model;
-  int input_size;
+  int input_size = 0;
+  int input_size2 = 0;
   for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "--predict_config") {
       predict_config = std::string(argv[++i]);
@@ -71,9 +73,12 @@ int main(int argc, char* argv[]) {
       merged_model = std::string(argv[++i]);
     } else if (std::string(argv[i]) == "--input_size") {
       input_size = atoi(argv[++i]);
+    } else if (std::string(argv[i]) == "--input_size2") {
+      input_size2 = atoi(argv[++i]);
     }
   }
 
+  // Step1: paddle init
   {
     Timer time("init paddle");
     if (paddle_init(0, NULL) != kPD_NO_ERROR) {
@@ -81,7 +86,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  // Create a gradient machine for inference.
+  // Step2: Load model and create a gradient machine for inference.
   paddle_gradient_machine machine;
   paddle_error error = kPD_NO_ERROR;
   if (!merged_model.empty()) {
@@ -119,25 +124,54 @@ int main(int argc, char* argv[]) {
     std::cout << "paddle create inference machine error!" << std::endl;
   }
 
-  // Create input matrix.
+  // Step3: create input argument.
+  int sample_num = 1;
+  int argument_num = 1;
+  if (input_size2 > 0) argument_num++;
+  srand(time(0));
   paddle_arguments in_args = paddle_arguments_create_none();
-  error |= paddle_arguments_resize(in_args, 1);
-  paddle_matrix mat = paddle_matrix_create(/* sample_num */ 1,
+  error |= paddle_arguments_resize(in_args, argument_num);
+
+  // input argument1
+  paddle_matrix mat = paddle_matrix_create(/* sample_num */ sample_num,
                                            /* size */ input_size,
                                            /* useGPU */ false);
-  srand(time(0));
   paddle_real* array;
   // Get First row.
   error |= paddle_matrix_get_row(mat, 0, &array);
 
-  for (int i = 0; i < input_size; ++i) {
-    array[i] = rand() / ((float)RAND_MAX);
+  for (int n = 0; n < sample_num; ++n) {
+    for (int i = 0; i < input_size; ++i) {
+      array[i] = rand() / ((float)RAND_MAX);
+    }
   }
 
   error |= paddle_arguments_set_value(in_args, 0, mat);
 
-  paddle_arguments out_args = paddle_arguments_create_none();
+  // input argument2 if have
+  paddle_matrix mat2;
+  if (input_size2 > 0) {
+    mat2 =
+      paddle_matrix_create(/* sample_num */ sample_num, input_size2, false);
+    paddle_real* array;
+    error |= paddle_matrix_get_row(mat2, 0, &array);
+    for (int n = 0; n < sample_num; ++n) {
+      for (int i = 0; i < input_size2; ++i) {
+        array[i] = rand() / ((float)RAND_MAX);
+      }
+    }
 
+    error |= paddle_arguments_set_value(in_args, 1, mat2);
+
+    // OCR detection model support arbitrary shape input 
+    int size = std::sqrt(input_size / 3);
+    std::cout << "height = " << size << std::endl;
+    error |= paddle_arguments_set_frame_shape(in_args, 0, size, size);
+  }
+
+  // Step4: forward calculation
+  // output argument
+  paddle_arguments out_args = paddle_arguments_create_none();
   if (error != kPD_NO_ERROR) {
     std::cout << "paddle init input data!" << std::endl;
   }
@@ -161,8 +195,12 @@ int main(int argc, char* argv[]) {
     std::cout << "paddle forward error!" << std::endl;
   }
 
+  // Step5: Release resources
   paddle_arguments_destroy(out_args);
   paddle_matrix_destroy(mat);
+  if (input_size2 > 0) {
+    paddle_matrix_destroy(mat2);
+  }
   paddle_arguments_destroy(in_args);
   paddle_gradient_machine_destroy(machine);
 
